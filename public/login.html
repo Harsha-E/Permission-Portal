@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | UNI-PASS System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="module" src="../assets/js/firebase-init.js"></script>
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen font-sans">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden m-4">
+        
+        <div class="bg-slate-900 p-8 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+            <div class="relative z-10">
+                <i class="fas fa-university text-4xl text-blue-500 mb-3"></i>
+                <h2 class="text-3xl font-bold text-white tracking-tight">UNI-PASS</h2>
+                <p class="text-slate-400 text-sm mt-1">Institutional Access Portal</p>
+            </div>
+        </div>
+
+        <form id="login-form" class="p-8 space-y-6">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-4 top-3.5 text-slate-400"></i>
+                    <input type="email" id="login-email" required class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition font-medium" placeholder="name@mvgrce.edu.in">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-3.5 text-slate-400"></i>
+                    <input type="password" id="login-pass" required class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition font-medium" placeholder="••••••••">
+                </div>
+                <div class="text-right mt-1">
+                    <a href="#" class="text-xs text-blue-600 hover:underline font-bold">Forgot Password?</a>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-login" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 active:scale-95 flex justify-center items-center gap-2">
+                <span>Sign In</span> <i class="fas fa-arrow-right"></i>
+            </button>
+
+            <p class="text-center text-sm text-slate-500 mt-6">
+                New user? <a href="signup.html" class="text-blue-600 font-bold hover:text-blue-700">Create Account</a>
+            </p>
+        </form>
+    </div>
+
+    <script type="module">
+        import { db, auth } from '../assets/js/firebase-init.js';
+
+        function showToast(msg, type = 'error') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const color = type === 'error' ? 'bg-red-500' : 'bg-green-600';
+            toast.className = `${color} text-white px-6 py-3 rounded-lg shadow-lg mb-2 flex items-center gap-3 animate-bounce`;
+            toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            const originalContent = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
+
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, pass);
+                const uid = userCredential.user.uid;
+
+                // Verify Role & Status
+                const doc = await db.collection('users').doc(uid).get();
+                
+                if (!doc.exists) {
+                    throw new Error("User profile not found in database.");
+                }
+
+                const data = doc.data();
+
+                if (data.isBlocked) {
+                    await auth.signOut();
+                    throw new Error("Account suspended. Contact Admin.");
+                }
+
+                // Redirect based on Role
+                showToast("Login Successful! Redirecting...", "success");
+                
+                setTimeout(() => {
+                    switch (data.role) {
+                        case 'student': window.location.href = '../portals/student/portalA.html'; break;
+                        case 'teacher': window.location.href = '../portals/teacher/portalA.html'; break;
+                        case 'hod': window.location.href = '../portals/hod/portalA.html'; break;
+                        case 'lab_assistant': window.location.href = '../portals/lab-assistant/dashboard.html'; break;
+                        case 'admin': window.location.href = '../admin/admin.html'; break;
+                        default: 
+                            if (data.role === 'pending') throw new Error("Account pending approval.");
+                            window.location.href = '../public/unauthorized.html';
+                    }
+                }, 1000);
+
+            } catch (err) {
+                console.error(err);
+                showToast(err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        });
+    </script>
+</body>
+</html>

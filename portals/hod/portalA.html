@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOD Dashboard | UNI-PASS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+    <script src="../../assets/js/ui.js" defer></script>
+    <script type="module" src="../../assets/js/route-guard.js"></script>
+    
+    <script>
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { brand: { 50: '#fff7ed', 100: '#ffedd5', 600: '#ea580c', 900: '#7c2d12' } } 
+                } 
+            } 
+        }
+    </script>
+</head>
+<body class="bg-orange-50/30 font-sans h-screen flex overflow-hidden">
+
+    <aside class="fixed inset-y-0 left-0 w-64 bg-white border-r border-orange-100 z-50 flex flex-col shadow-xl">
+        <div class="h-16 flex items-center gap-2 px-6 border-b border-orange-50">
+            <span class="font-bold text-xl text-slate-800 tracking-tight">UNI-PASS</span>
+            <span class="text-[10px] bg-brand-600 text-white px-2 py-0.5 rounded uppercase font-bold">HOD</span>
+        </div>
+        
+        <div class="p-6 border-b border-orange-50">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-600 to-brand-900 text-white flex items-center justify-center font-bold text-xl shadow-md">
+                    <span id="avatar-initial">H</span>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 truncate w-32" id="hod-name">Loading...</h4>
+                    <p class="text-xs text-slate-500" id="hod-dept">Department Head</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <button onclick="filterView('pending')" id="tab-pending" class="w-full flex items-center justify-between px-4 py-3 bg-brand-600 text-white rounded-xl font-bold transition shadow-md">
+                <div class="flex items-center gap-3"><i class="fas fa-stamp w-5"></i> Approvals</div>
+                <span id="badge-pending" class="bg-white text-brand-600 text-xs px-2 py-0.5 rounded-full shadow-sm">0</span>
+            </button>
+            
+            <button onclick="filterView('history')" id="tab-history" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-orange-50 rounded-xl font-medium transition">
+                <div class="flex items-center gap-3"><i class="fas fa-history w-5"></i> History</div>
+            </button>
+
+            <button onclick="filterView('faculty')" id="tab-faculty" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-orange-50 rounded-xl font-medium transition">
+                <div class="flex items-center gap-3"><i class="fas fa-chalkboard-teacher w-5"></i> Faculty Status</div>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-orange-50">
+            <button id="logout-btn" class="w-full py-2 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 rounded-lg transition text-sm font-bold">
+                <i class="fas fa-sign-out-alt"></i> Log Out
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full w-full ml-64 overflow-hidden relative">
+        <header class="bg-white border-b border-orange-100 h-16 flex items-center justify-between px-8 shadow-sm">
+            <h2 class="text-xl font-bold text-slate-800" id="view-title">Pending Approvals</h2>
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Search..." class="pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-600 outline-none">
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8" id="main-scroll">
+            <div class="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-orange-50/50 border-b border-orange-100">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Date</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Applicant</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Type</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Reason</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-100 text-sm">
+                        </tbody>
+                </table>
+                <div id="empty-state" class="hidden py-12 text-center">
+                    <div class="text-slate-300 text-4xl mb-3"><i class="fas fa-check-circle"></i></div>
+                    <p class="text-slate-500 font-medium">All caught up!</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="action-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 w-[90%] max-w-md">
+            
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900" id="modal-title">Verification</h3>
+                    <p class="text-xs text-gray-500">Finalize this request.</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div id="approve-controls" class="hidden space-y-4">
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <p class="text-xs font-bold text-blue-600 uppercase mb-2">Modify Duration</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-gray-500 font-bold">Start</label>
+                            <input id="mod-start" type="text" class="w-full bg-white border border-blue-200 rounded p-2 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-500 font-bold">End</label>
+                            <input id="mod-end" type="text" class="w-full bg-white border border-blue-200 rounded p-2 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reject-controls" class="hidden space-y-3">
+                <textarea id="reason-input" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none" placeholder="Reason for rejection..." rows="3"></textarea>
+                <div class="border-t border-slate-100 pt-3">
+                    <label class="flex items-start gap-3 p-3 border border-red-100 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition">
+                        <input type="checkbox" id="block-check" class="mt-1 text-red-600 focus:ring-red-500 rounded border-red-300">
+                        <div>
+                            <span class="block text-sm font-bold text-red-700">Disciplinary Block</span>
+                            <span class="block text-xs text-red-500">Permanently locks account.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100">
+                <button onclick="closeModal()" class="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-bold text-sm transition">Cancel</button>
+                <button id="confirm-btn" class="px-6 py-2.5 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700 transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from '../../assets/js/firebase-init.js';
+        import { PermissionService } from '../../assets/js/permission-flow.js';
+
+        let currentView = 'pending';
+        let rawData = [];
+        let unsubscribe = null;
+        let currentUserProfile = null;
+        let activeRequestId = null, activeStudentId = null, originalRequestData = null;
+        let fpStart, fpEnd;
+
+        auth.onAuthStateChanged(async user => {
+            if (!user) location.href = '../../public/login.html';
+            
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (!doc.exists || doc.data().role !== 'hod') {
+                alert("Access Denied: HOD Only");
+                location.href = '../../public/login.html';
+                return;
+            }
+
+            currentUserProfile = doc.data();
+            document.getElementById('hod-name').innerText = currentUserProfile.displayName;
+            document.getElementById('hod-dept').innerText = `${currentUserProfile.department} Dept`;
+            document.getElementById('avatar-initial').innerText = (currentUserProfile.displayName || 'H').charAt(0);
+
+            fpStart = flatpickr("#mod-start", { dateFormat: "Y-m-d" });
+            fpEnd = flatpickr("#mod-end", { dateFormat: "Y-m-d" });
+
+            // Auto-Repair Profile for Golden Schema
+            if (currentUserProfile.rollNumber !== 'HOD') {
+                try {
+                    await db.collection('users').doc(user.uid).update({ 
+                        rollNumber: "HOD", 
+                        section: "Head", 
+                        year: "5" 
+                    });
+                } catch(e) { console.error("Auto-repair failed", e); }
+            }
+
+            fetchData();
+        });
+
+        window.filterView = (view) => {
+            currentView = view;
+            
+            document.getElementById('tab-pending').className = view === 'pending' ? "w-full flex items-center justify-between px-4 py-3 bg-brand-600 text-white rounded-xl font-bold transition shadow-md" : "w-full flex items-center justify-between px-4 py-3 text-slate-500 hover:bg-orange-50 rounded-xl font-medium transition";
+            document.getElementById('tab-history').className = view === 'history' ? "w-full flex items-center gap-3 px-4 py-3 bg-brand-600 text-white rounded-xl font-bold transition shadow-md" : "w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-orange-50 rounded-xl font-medium transition";
+            document.getElementById('tab-faculty').className = view === 'faculty' ? "w-full flex items-center gap-3 px-4 py-3 bg-brand-600 text-white rounded-xl font-bold transition shadow-md" : "w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-orange-50 rounded-xl font-medium transition";
+            
+            const titleMap = { pending: 'Pending Approvals', history: 'Approval History', faculty: 'Faculty Leaves' };
+            document.getElementById('view-title').innerText = titleMap[view];
+            
+            fetchData();
+        };
+
+        function fetchData() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400"><i class="fas fa-circle-notch fa-spin"></i> Loading...</td></tr>';
+            
+            if (unsubscribe) unsubscribe();
+
+            let query = db.collection('permissions').where('department', '==', currentUserProfile.department);
+
+            if (currentView === 'pending') {
+                query = query.where('status', '==', 'PENDING_HOD');
+            } else if (currentView === 'faculty') {
+                // To fetch ONLY faculty leaves, we need to filter where role == 'teacher'
+                // AND status is PENDING_HOD (since faculty leaves skip teacher approval)
+                // Note: This assumes HOD approves faculty leaves.
+                query = query.where('role', '==', 'teacher').where('status', '==', 'PENDING_HOD');
+            } else {
+                query = query.where('status', 'in', ['APPROVED', 'REJECTED']);
+            }
+
+            unsubscribe = query.onSnapshot(snap => {
+                if (currentView === 'pending') document.getElementById('badge-pending').innerText = snap.size;
+                
+                rawData = [];
+                snap.forEach(doc => {
+                    let d = doc.data();
+                    d.id = doc.id;
+                    d.timestampVal = new Date(d.timestamp).getTime();
+                    rawData.push(d);
+                });
+
+                applyFilters();
+            });
+        }
+
+        window.applyFilters = () => {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const filtered = rawData.filter(d => 
+                d.studentName.toLowerCase().includes(term) || 
+                (d.rollNumber && d.rollNumber.toLowerCase().includes(term))
+            ).sort((a,b) => b.timestampVal - a.timestampVal);
+
+            renderTable(filtered);
+        };
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            const emptyState = document.getElementById('empty-state');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            data.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-orange-50/30 transition group";
+                
+                // Identify if applicant is Staff
+                const isStaff = d.rollNumber === 'Staff' || d.role === 'teacher';
+                const idDisplay = isStaff ? `<span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-1.5 py-0.5 rounded">FACULTY</span>` : `<span class="font-mono text-xs text-slate-400">${d.rollNumber}</span>`;
+                
+                const dateStr = new Date(d.timestampVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                let actions = '';
+                if (currentView === 'pending' || currentView === 'faculty') {
+                    // For faculty leaves, we assume HOD is the final approver
+                    // For pending student requests (escalated), HOD is also final.
+                    actions = `
+                        <div class="flex justify-end gap-2">
+                            <button onclick="prepAction('${d.id}', '${d.studentID}', 'reject', null)" class="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition"><i class="fas fa-times"></i></button>
+                            <button onclick="prepAction('${d.id}', '${d.studentID}', 'approve', ${JSON.stringify(d).replace(/"/g, '&quot;')})" class="w-8 h-8 rounded-lg flex items-center justify-center text-green-500 hover:bg-green-50 border border-transparent hover:border-green-100 transition"><i class="fas fa-check"></i></button>
+                        </div>
+                    `;
+                } else {
+                    const color = d.status === 'APPROVED' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
+                    actions = `<span class="px-2 py-1 rounded text-xs font-bold ${color}">${d.status}</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-xs font-mono text-slate-500">${dateStr}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-900">${d.studentName}</div>
+                        ${idDisplay}
+                    </td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold bg-slate-100 text-slate-600 uppercase">${d.reasonType}</span></td>
+                    <td class="px-6 py-4 text-slate-600 max-w-xs truncate" title="${d.reason}">${d.reason}</td>
+                    <td class="px-6 py-4 text-right">${actions}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.prepAction = (id, sid, action, data) => {
+            activeRequestId = id; activeStudentId = sid; originalRequestData = data;
+            document.getElementById('action-modal').classList.remove('hidden');
+            
+            if(action === 'approve') {
+                document.getElementById('approve-controls').classList.remove('hidden');
+                document.getElementById('reject-controls').classList.add('hidden');
+                document.getElementById('modal-title').innerText = "Approve Request";
+                fpStart.setDate(data.startDate); fpEnd.setDate(data.endDate);
+                document.getElementById('confirm-btn').onclick = confirmApprove;
+            } else {
+                document.getElementById('approve-controls').classList.add('hidden');
+                document.getElementById('reject-controls').classList.remove('hidden');
+                document.getElementById('modal-title').innerText = "Reject Request";
+                document.getElementById('confirm-btn').onclick = confirmReject;
+            }
+        };
+
+        window.closeModal = () => document.getElementById('action-modal').classList.add('hidden');
+
+        async function confirmApprove() {
+            const btn = document.getElementById('confirm-btn'); btn.disabled = true; btn.innerText = "Processing...";
+            try {
+                const s = document.getElementById('mod-start').value, e = document.getElementById('mod-end').value;
+                if(s !== originalRequestData.startDate || e !== originalRequestData.endDate) {
+                    await db.collection('permissions').doc(activeRequestId).update({ startDate: s, endDate: e, isModified: true, modifiedBy: "HOD" });
+                    originalRequestData.startDate = s; originalRequestData.endDate = e;
+                }
+                await PermissionService.approveRequest(activeRequestId, { approvedBy: 'HOD', approverName: currentUserProfile.displayName });
+                closeModal();
+            } catch(e) { alert(e.message); } finally { btn.disabled = false; btn.innerText = "Confirm"; }
+        }
+
+        async function confirmReject() {
+            const btn = document.getElementById('confirm-btn'), r = document.getElementById('reason-input').value;
+            if(!r) return alert("Reason required");
+            btn.disabled = true; btn.innerText = "Processing...";
+            try {
+                if(document.getElementById('block-check').checked) await PermissionService.blockStudent(activeRequestId, activeStudentId, r);
+                else await PermissionService.rejectRequest(activeRequestId, r);
+                closeModal();
+            } catch(e) { alert(e.message); } finally { btn.disabled = false; btn.innerText = "Confirm"; }
+        }
+
+        document.getElementById('logout-btn').onclick = () => auth.signOut().then(() => location.href = '../../public/login.html');
+    </script>
+</body>
+</html>

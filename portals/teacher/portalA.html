@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard | UNI-PASS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+    <script src="../../assets/js/ui.js" defer></script>
+    <script type="module" src="../../assets/js/route-guard.js"></script>
+    
+    <script>
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 600: '#2563eb', 900: '#1e3a8a' } } 
+                } 
+            } 
+        }
+    </script>
+</head>
+<body class="bg-slate-100 font-sans h-screen flex overflow-hidden">
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white z-50 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 flex flex-col shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-chalkboard-teacher text-blue-500"></i>
+                <span class="font-bold text-lg tracking-wider">FACULTY</span>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden ml-auto text-slate-400"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="p-6 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-xl shadow-md border border-blue-500/30">
+                    <span id="avatar-initial">T</span>
+                </div>
+                <div class="overflow-hidden">
+                    <h4 class="text-sm font-bold text-slate-100 truncate w-32" id="teacher-name">Loading...</h4>
+                    <p class="text-xs text-slate-400 truncate" id="teacher-dept">Class Advisor</p>
+                </div>
+            </div>
+            <button id="apply-leave-btn" onclick="openSelfLeaveModal()" disabled class="w-full mt-4 flex items-center justify-center gap-2 bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white py-2 rounded-lg text-xs font-bold border border-slate-700 transition shadow-sm">
+                <i class="fas fa-plus-circle"></i> Apply for Leave
+            </button>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
+            <p class="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Student Management</p>
+            
+            <button onclick="filterView('incoming')" id="tab-incoming" class="w-full flex items-center justify-between px-4 py-3 bg-blue-600 text-white rounded-xl font-bold transition shadow-lg shadow-blue-900/20">
+                <div class="flex items-center gap-3"><i class="fas fa-inbox w-4"></i> Inbox</div>
+                <span id="badge-incoming" class="bg-white text-blue-600 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+            </button>
+            
+            <button onclick="filterView('escalated')" id="tab-escalated" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition">
+                <i class="fas fa-share w-4"></i> Escalated
+            </button>
+            
+            <button onclick="filterView('history')" id="tab-history" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition">
+                <i class="fas fa-history w-4"></i> History
+            </button>
+
+            <div class="h-px bg-slate-800 my-4 mx-2"></div>
+
+            <p class="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Faculty Services</p>
+            
+            <button onclick="filterView('my_leaves')" id="tab-my_leaves" class="w-full flex items-center justify-between px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition">
+                <div class="flex items-center gap-3"><i class="fas fa-paper-plane w-4"></i> My Requests</div>
+                <span id="badge-leaves" class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <button onclick="filterView('substitutions')" id="tab-substitutions" class="w-full flex items-center justify-between px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition">
+                <div class="flex items-center gap-3"><i class="fas fa-chalkboard-teacher w-4"></i> Substitutions</div>
+                <span id="badge-subs" class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-800">
+            <button id="logout-btn" class="w-full py-2 flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition text-sm font-bold">
+                <i class="fas fa-sign-out-alt"></i> Log Out
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full w-full overflow-hidden relative">
+        <header class="bg-white border-b border-slate-200 shrink-0 z-10 shadow-sm h-16 flex items-center justify-between px-6">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-500"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-lg font-bold text-slate-800" id="view-title">Incoming Requests</h2>
+            </div>
+            
+            <div id="bulk-toolbar" class="hidden items-center gap-3 animate-fade-in-up">
+                <span class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200"><span id="selected-count">0</span> Selected</span>
+                <button onclick="executeBulk('approve')" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+                    <i class="fas fa-check-double"></i> Approve & Escalate
+                </button>
+                <button onclick="executeBulk('reject')" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-2">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            </div>
+        </header>
+
+        <div class="px-6 py-4 bg-white border-b border-slate-200 flex flex-wrap gap-3 items-center justify-between">
+            <div class="relative w-full max-w-sm">
+                <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                <input type="text" id="filter-search" onkeyup="applyFilters(true)" placeholder="Search Name, ID..." 
+                    class="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <select id="filter-category" onchange="applyFilters(true)" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-slate-600 font-bold">
+                    <option value="all">All Categories</option>
+                    <option value="Medical">Medical</option>
+                    <option value="Personal">Personal</option>
+                    <option value="On-Duty">On Duty (OD)</option>
+                </select>
+                <div class="h-6 w-px bg-slate-200 mx-1"></div>
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-500">
+                    Rows:
+                    <select id="filter-limit" onchange="applyFilters(true)" class="border border-slate-200 rounded-md px-2 py-1 bg-white text-slate-700">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
+                </label>
+                <button onclick="clearFilters()" class="text-slate-400 hover:text-blue-600 transition px-2" title="Refresh" id="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 bg-slate-100" id="main-scroll">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr id="table-headers">
+                            </tr>
+                    </thead>
+                    <tbody id="request-table-body" class="divide-y divide-slate-100 text-sm">
+                        </tbody>
+                </table>
+                
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center h-64 text-center">
+                    <div class="w-16 h-16 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center text-slate-300 text-2xl mb-4">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3 class="text-slate-900 font-bold">No Requests Found</h3>
+                    <p class="text-slate-500 text-xs mt-1">You're all caught up!</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="action-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 w-[90%] max-w-md">
+            
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900" id="modal-title">Review Request</h3>
+                    <p class="text-xs text-slate-500">Action will be recorded.</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="approve-controls" class="hidden space-y-4">
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold uppercase">Start Date</label>
+                            <input id="mod-start" type="text" class="w-full mt-1 p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 bg-white">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold uppercase">End Date</label>
+                            <input id="mod-end" type="text" class="w-full mt-1 p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Substitute (Optional)</label>
+                        <select id="mod-substitute" class="w-full mt-1 p-2 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 bg-white">
+                            <option value="">No Change</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end mt-4">
+                    <button onclick="closeModal()" class="px-4 py-2 text-slate-500 font-bold text-sm hover:bg-slate-100 rounded-lg">Cancel</button>
+                    <button id="confirm-approve-btn" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-lg hover:bg-blue-700 transition">Approve & Escalate</button>
+                </div>
+            </div>
+
+            <div id="reject-controls" class="hidden space-y-4">
+                <textarea id="reason-input" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none h-24" placeholder="Reason for rejection..."></textarea>
+                <div class="border-t border-slate-100 pt-4">
+                    <label class="flex items-start gap-3 p-3 border border-red-100 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition">
+                        <div class="pt-0.5"><input type="checkbox" id="disciplinary-check" class="text-red-600 focus:ring-red-500 rounded"></div>
+                        <div>
+                            <span class="block text-sm font-bold text-red-700">Flag for HOD</span>
+                            <span class="block text-xs text-red-500 leading-tight mt-0.5">Mark as disciplinary issue.</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="flex gap-3 justify-end mt-4">
+                    <button onclick="closeModal()" class="px-4 py-2 text-slate-500 font-bold text-sm hover:bg-slate-100 rounded-lg">Cancel</button>
+                    <button id="confirm-reject-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg font-bold text-sm shadow-lg hover:bg-red-700 transition">Reject Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="leave-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeLeaveModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 w-[90%] max-w-md scale-100 transition-transform">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Faculty Leave Application</h3>
+                    <p class="text-xs text-slate-500">Routes to HOD for approval.</p>
+                </div>
+                <button onclick="closeLeaveModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="leave-form" onsubmit="submitFacultyLeave(event)">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Leave Type</label>
+                            <select id="leave-type" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
+                                <option value="Casual Leave">Casual Leave</option>
+                                <option value="Medical Leave">Medical Leave</option>
+                                <option value="Personal">Personal Leave</option>
+                                <option value="On-Duty">On Duty (OD)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Substitute</label>
+                            <select id="substitute-select" required class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">From Date</label>
+                            <input type="text" id="leave-start" required class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">To Date</label>
+                            <input type="text" id="leave-end" required class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Reason</label>
+                        <textarea id="leave-reason" required rows="3" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none resize-none" placeholder="Reason for leave..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeLeaveModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg text-sm font-bold transition">Cancel</button>
+                    <button type="submit" id="leave-submit-btn" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg hover:bg-blue-700 transition">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from '../../assets/js/firebase-init.js';
+
+        let currentView = 'incoming';
+        let activeRequest = null;
+        let fpStart, fpEnd, fpLeaveStart, fpLeaveEnd;
+        let rawData = [], filteredData = [], selectedIds = new Set();
+        let sortDirection = 1, activeSortKey = 'timestamp'; 
+        let currentPage = 1, rowsPerPage = 10, totalPages = 1;
+        let unsubscribe = null; 
+        
+        let currentUserProfile = null; 
+
+        auth.onAuthStateChanged(async user => {
+            if (!user) location.href = '../../public/login.html';
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (!doc.exists || doc.data().role !== 'teacher') location.href = '../../public/login.html';
+
+            currentUserProfile = doc.data(); 
+            document.getElementById('teacher-name').innerText = currentUserProfile.displayName;
+            document.getElementById('teacher-dept').innerText = `${currentUserProfile.department} Faculty`;
+            document.getElementById('avatar-initial').innerText = (currentUserProfile.displayName || 'T').charAt(0);
+            
+            if (!currentUserProfile.rollNumber || currentUserProfile.rollNumber === 'null') {
+                console.log("Auto-Repairing Profile...");
+                await db.collection('users').doc(user.uid).update({
+                    rollNumber: "Staff",
+                    section: "Faculty",
+                    year: "4"
+                });
+                currentUserProfile.rollNumber = "Staff";
+                currentUserProfile.section = "Faculty";
+                currentUserProfile.year = "4";
+            }
+
+            document.getElementById('apply-leave-btn').disabled = false;
+
+            // DOM CHECK before init
+            const modStart = document.getElementById('mod-start');
+            const modEnd = document.getElementById('mod-end');
+            const leaveStart = document.getElementById('leave-start');
+            const leaveEnd = document.getElementById('leave-end');
+
+            if(modStart) fpStart = flatpickr(modStart, { dateFormat: "Y-m-d" });
+            if(modEnd) fpEnd = flatpickr(modEnd, { dateFormat: "Y-m-d" });
+            if(leaveStart) fpLeaveStart = flatpickr(leaveStart, { dateFormat: "Y-m-d", minDate: "today" });
+            if(leaveEnd) fpLeaveEnd = flatpickr(leaveEnd, { dateFormat: "Y-m-d", minDate: "today" });
+
+            fetchData(currentUserProfile.department);
+            loadTeachers();
+        });
+
+        async function loadTeachers() {
+            const selectApp = document.getElementById('substitute-select');
+            const selectMod = document.getElementById('mod-substitute');
+            if(!selectApp || !selectMod) return;
+
+            const snap = await db.collection('users').where('role', '==', 'teacher').get();
+            
+            selectApp.innerHTML = '<option value="">Select Substitute...</option>';
+            selectMod.innerHTML = '<option value="">No Change</option>';
+
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (doc.id !== auth.currentUser.uid && !data.isBlocked) { 
+                    const opt1 = document.createElement('option');
+                    opt1.value = doc.id; opt1.innerText = data.displayName;
+                    selectApp.appendChild(opt1);
+                    const opt2 = document.createElement('option');
+                    opt2.value = doc.id; opt2.innerText = data.displayName;
+                    selectMod.appendChild(opt2);
+                }
+            });
+        }
+
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('-translate-x-full');
+
+        window.filterView = (view) => {
+            currentView = view; selectedIds.clear(); updateBulkToolbar();
+            if(document.getElementById('select-all')) document.getElementById('select-all').checked = false;
+
+            ['incoming', 'escalated', 'history', 'my_leaves', 'substitutions'].forEach(v => {
+                const btn = document.getElementById(`tab-${v}`);
+                if(btn) {
+                    if (v === view) {
+                        btn.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+                        btn.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
+                    } else {
+                        btn.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+                        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
+                    }
+                }
+            });
+            
+            const titleMap = { 'incoming': 'Incoming Requests', 'escalated': 'Escalated Requests', 'history': 'Approval History', 'my_leaves': 'My Leave Requests', 'substitutions': 'Substitution Assignments' };
+            document.getElementById('view-title').innerText = titleMap[view] || 'Dashboard';
+
+            if(window.innerWidth < 768) window.toggleSidebar();
+            if (currentUserProfile) fetchData(currentUserProfile.department);
+        };
+
+        function fetchData(dept) {
+            const tbody = document.getElementById('request-table-body');
+            tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-slate-400"><i class="fas fa-circle-notch fa-spin text-blue-600"></i> Loading...</td></tr>';
+            if(unsubscribe) unsubscribe();
+
+            let query = db.collection('permissions');
+            const uid = auth.currentUser.uid;
+
+            if (currentView === 'incoming') query = query.where('status', '==', 'PENDING_TEACHER').where('department', '==', dept);
+            else if (currentView === 'escalated') query = query.where('status', '==', 'PENDING_HOD').where('department', '==', dept);
+            else if (currentView === 'my_leaves') query = query.where('studentID', '==', uid).where('role', '==', 'teacher');
+            else if (currentView === 'substitutions') query = query.where('substituteUID', '==', uid);
+            else query = query.where('approvals.teacher.uid', '==', uid);
+
+            unsubscribe = query.onSnapshot(snap => {
+                if(currentView === 'incoming') document.getElementById('badge-incoming').innerText = snap.size;
+                if(currentView === 'substitutions') document.getElementById('badge-subs').innerText = snap.size;
+                if(currentView === 'my_leaves') document.getElementById('badge-leaves').innerText = snap.size;
+
+                rawData = [];
+                snap.forEach(doc => {
+                    let d = doc.data(); d.id = doc.id;
+                    const dt1 = new Date(d.startDate), dt2 = new Date(d.endDate);
+                    d.duration = Math.ceil((dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
+                    if (d.timestamp && typeof d.timestamp.toMillis === 'function') d.timestampVal = d.timestamp.toMillis();
+                    else if (d.timestamp) d.timestampVal = new Date(d.timestamp).getTime() || 0;
+                    else d.timestampVal = 0;
+                    rawData.push(d);
+                });
+                applyFilters(); 
+            });
+        }
+
+        window.clearFilters = () => {
+            const icon = document.querySelector('#refresh-btn i');
+            icon.classList.add('spin-once');
+            setTimeout(() => icon.classList.remove('spin-once'), 500);
+            document.getElementById('filter-search').value = '';
+            document.getElementById('filter-category').value = 'all';
+            document.getElementById('filter-limit').value = '10';
+            activeSortKey = 'timestamp'; sortDirection = -1; 
+            applyFilters(true);
+        };
+
+        window.applyFilters = (resetPage = false) => {
+            // SAFETY CHECK TO FIX "NULL" ERROR
+            const searchEl = document.getElementById('filter-search');
+            const catEl = document.getElementById('filter-category');
+            if(!searchEl || !catEl) return;
+
+            const term = searchEl.value.toLowerCase();
+            const cat = catEl.value;
+            rowsPerPage = parseInt(document.getElementById('filter-limit').value);
+            if(resetPage) currentPage = 1;
+
+            filteredData = rawData.filter(d => {
+                const matchesSearch = (d.studentName || '').toLowerCase().includes(term) || (d.rollNumber || '').toLowerCase().includes(term);
+                const matchesCat = cat === 'all' || d.reasonType === cat;
+                return matchesSearch && matchesCat;
+            });
+
+            filteredData.sort((a, b) => {
+                let valA = a[activeSortKey], valB = b[activeSortKey];
+                if(activeSortKey === 'timestamp') { valA = a.timestampVal; valB = b.timestampVal; }
+                if(activeSortKey === 'duration') { valA = a.duration || 0; valB = b.duration || 0; }
+                if(typeof valA === 'string') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); }
+                return (valA < valB ? -1 : 1) * sortDirection;
+            });
+
+            totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+            const start = (currentPage - 1) * rowsPerPage;
+            const displayData = filteredData.slice(start, start + rowsPerPage);
+            
+            if(document.getElementById('selected-count')) document.getElementById('selected-count').innerText = selectedIds.size;
+            renderTable(displayData, start);
+        };
+
+        function renderTable(data, startIndex) {
+            const tbody = document.getElementById('request-table-body');
+            const thead = document.getElementById('table-headers');
+            tbody.innerHTML = '';
+
+            let headers = `<th class="px-6 py-4 w-10 text-center">${currentView === 'incoming' ? `<input type="checkbox" id="select-all" onclick="toggleSelectAll()" class="w-4 h-4 rounded text-blue-600 cursor-pointer">` : ''}</th>`;
+            headers += `<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">S.No</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase cursor-pointer group" onclick="sortTable('timestamp')">Date <i id="sort-timestamp" class="sort-icon fas fa-sort text-slate-300 ml-1"></i></th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase cursor-pointer group" onclick="sortTable('studentName')">${currentView === 'substitutions' ? 'Requester' : 'Name'} <i id="sort-studentName" class="sort-icon fas fa-sort text-slate-300 ml-1"></i></th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase cursor-pointer group" onclick="sortTable('reasonType')">Category <i id="sort-reasonType" class="sort-icon fas fa-sort text-slate-300 ml-1"></i></th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase cursor-pointer group" onclick="sortTable('duration')">Duration <i id="sort-duration" class="sort-icon fas fa-sort text-slate-300 ml-1"></i></th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase w-1/4">Reason</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">${currentView === 'incoming' ? 'Actions' : 'Status'}</th>`;
+            thead.innerHTML = headers;
+            updateSortIcons();
+
+            if (data.length === 0) { document.getElementById('empty-state').classList.remove('hidden'); return; }
+            document.getElementById('empty-state').classList.add('hidden');
+
+            data.forEach((d, i) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition " + (selectedIds.has(d.id) ? "bg-blue-50" : "");
+                
+                const dateStr = d.timestampVal ? new Date(d.timestampVal).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12: true }) : 'N/A';
+                
+                let statusBadge = `<span class="px-2 py-1 rounded text-xs font-bold bg-slate-200 text-slate-600">${d.status}</span>`;
+                if(d.status === 'APPROVED') statusBadge = `<span class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-700">Approved</span>`;
+                if(d.status === 'REJECTED') statusBadge = `<span class="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700">Rejected</span>`;
+                if(d.status === 'PENDING_HOD') statusBadge = `<span class="px-2 py-1 rounded text-xs font-bold bg-orange-100 text-orange-700">Escalated</span>`;
+
+                let rowHTML = `<td class="px-6 py-4 text-center">${currentView === 'incoming' ? `<input type="checkbox" value="${d.id}" onchange="toggleSelection('${d.id}')" class="row-checkbox w-4 h-4 rounded text-blue-600 cursor-pointer" ${selectedIds.has(d.id) ? 'checked' : ''}>` : ''}</td>`;
+                
+                rowHTML += `<td class="px-6 py-4 text-xs font-bold text-slate-400">${startIndex + i + 1}</td>
+                            <td class="px-6 py-4 text-xs font-mono text-slate-500">${dateStr}</td>
+                            <td class="px-6 py-4"><div class="font-bold text-slate-900 text-sm">${d.studentName}</div><div class="text-xs text-slate-400 font-mono">${d.rollNumber || 'Staff'}</div></td>
+                            <td class="px-6 py-4"><span class="inline-block px-2 py-1 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600">${d.reasonType}</span></td>
+                            <td class="px-6 py-4 text-sm font-bold text-slate-800">${d.duration} Days</td>
+                            <td class="px-6 py-4"><p class="text-sm text-slate-600 truncate max-w-xs">${d.reason}</p></td>`;
+
+                if(currentView === 'incoming') {
+                    rowHTML += `<td class="px-6 py-4 text-right">
+                        <div class="flex gap-2 justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                            <button onclick="prepAction('${d.id}', 'reject', null)" class="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition border border-transparent hover:border-red-200"><i class="fas fa-times"></i></button>
+                            <button onclick="prepAction('${d.id}', 'approve', '${d.startDate}', '${d.endDate}', '${d.substituteUID || ''}')" class="w-8 h-8 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 transition border border-transparent hover:border-blue-200"><i class="fas fa-pencil-alt text-xs"></i></button>
+                            <button onclick="quickApprove('${d.id}')" class="w-8 h-8 rounded-lg flex items-center justify-center text-green-500 hover:bg-green-50 transition border border-transparent hover:border-green-200"><i class="fas fa-check"></i></button>
+                        </div>
+                    </td>`;
+                } else {
+                    rowHTML += `<td class="px-6 py-4 text-right">${statusBadge}</td>`;
+                }
+                tr.innerHTML = rowHTML;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function escalateToHOD(id, updates = {}) {
+            const baseUpdates = {
+                status: 'PENDING_HOD', 
+                'approvals.teacher': {
+                    status: 'APPROVED',
+                    uid: auth.currentUser.uid,
+                    name: currentUserProfile.displayName,
+                    timestamp: new Date().toISOString()
+                },
+                'approvals.hod': { status: 'PENDING' }
+            };
+            const finalUpdates = { ...baseUpdates, ...updates };
+            await db.collection('permissions').doc(id).update(finalUpdates);
+        }
+
+        window.submitFacultyLeave = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('leave-submit-btn');
+            btn.disabled = true; btn.innerHTML = '<div class="loader"></div>';
+
+            try {
+                if (!currentUserProfile) throw new Error("Profile not loaded.");
+
+                const leaveData = {
+                    studentID: auth.currentUser.uid,
+                    studentName: currentUserProfile.displayName, 
+                    email: auth.currentUser.email,
+                    role: 'teacher',
+                    department: currentUserProfile.department,
+                    rollNumber: currentUserProfile.rollNumber, 
+                    section: currentUserProfile.section, 
+                    year: currentUserProfile.year, 
+                    reasonType: document.getElementById('leave-type').value,
+                    reason: document.getElementById('leave-reason').value,
+                    startDate: document.getElementById('leave-start').value,
+                    endDate: document.getElementById('leave-end').value,
+                    substituteUID: document.getElementById('substitute-select').value,
+                    substituteName: document.getElementById('substitute-select').options[document.getElementById('substitute-select').selectedIndex].text,
+                    status: 'PENDING_HOD',
+                    timestamp: new Date().toISOString(),
+                    type: 'FACULTY_LEAVE',
+                    approvals: {
+                        teacher: {
+                            status: "APPROVED",
+                            uid: auth.currentUser.uid,
+                            name: currentUserProfile.displayName,
+                            timestamp: new Date().toISOString()
+                        },
+                        hod: { status: "PENDING" }
+                    }
+                };
+
+                await db.collection('permissions').add(leaveData);
+                closeLeaveModal(); alert("Leave request sent to HOD!");
+
+            } catch(err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.disabled = false; btn.innerText = "Submit Request";
+            }
+        };
+
+        window.toggleSelectAll = () => {
+            const chk = document.getElementById('select-all').checked;
+            selectedIds.clear();
+            if(chk) filteredData.forEach(d => selectedIds.add(d.id));
+            updateBulkToolbar(); applyFilters(false);
+        };
+        window.toggleSelection = (id) => {
+            if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+            updateBulkToolbar(); applyFilters(false);
+        };
+        function updateBulkToolbar() {
+            if(currentView !== 'incoming') { document.getElementById('bulk-toolbar').classList.add('hidden'); return; }
+            const count = selectedIds.size;
+            document.getElementById('selected-count').innerText = count;
+            document.getElementById('bulk-toolbar').className = count > 0 ? 'flex items-center gap-3 animate-fade-in-up' : 'hidden';
+        }
+        
+        window.executeBulk = async (action) => {
+            if(!confirm(`Confirm ${action} for ${selectedIds.size} items?`)) return;
+            const promises = Array.from(selectedIds).map(id => {
+                if (action === 'approve') return escalateToHOD(id); 
+                else return db.collection('permissions').doc(id).update({
+                    status: 'REJECTED',
+                    'approvals.teacher': {
+                        status: 'REJECTED',
+                        uid: auth.currentUser.uid,
+                        name: currentUserProfile.displayName,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+            });
+            await Promise.all(promises); selectedIds.clear(); updateBulkToolbar();
+        };
+
+        window.openSelfLeaveModal = () => document.getElementById('leave-modal').classList.remove('hidden');
+        window.closeLeaveModal = () => document.getElementById('leave-modal').classList.add('hidden');
+        window.closeModal = () => document.getElementById('action-modal').classList.add('hidden');
+        window.changePage = (d) => { if(currentPage + d > 0 && currentPage + d <= totalPages) { currentPage += d; applyFilters(false); } };
+        window.sortTable = (k) => { if(activeSortKey === k) sortDirection *= -1; else { sortDirection = 1; activeSortKey = k; } updateSortIcons(); applyFilters(false); };
+        function updateSortIcons() {
+            document.querySelectorAll('.sort-icon').forEach(i => i.className = 'fas fa-sort sort-icon text-slate-300 ml-1');
+            const icon = document.getElementById(`sort-${activeSortKey}`);
+            if(icon) icon.className = `sort-icon fas fa-arrow-${sortDirection === 1 ? 'up' : 'down'} sort-active ml-1`;
+        }
+        
+        window.prepAction = (id, action, start, end, subUID) => {
+            activeRequest = id;
+            document.getElementById('action-modal').classList.remove('hidden');
+            if(action === 'approve') {
+                document.getElementById('approve-controls').classList.remove('hidden');
+                document.getElementById('reject-controls').classList.add('hidden');
+                document.getElementById('modal-title').innerText = "Verify & Escalate";
+                if(fpStart) fpStart.setDate(start); 
+                if(fpEnd) fpEnd.setDate(end);
+                if(subUID) document.getElementById('mod-substitute').value = subUID;
+                else document.getElementById('mod-substitute').value = "";
+            } else {
+                document.getElementById('approve-controls').classList.add('hidden');
+                document.getElementById('reject-controls').classList.remove('hidden');
+                document.getElementById('modal-title').innerText = "Reject Request";
+            }
+        };
+        
+        window.quickApprove = async (id) => { 
+            if(confirm('Approve and escalate to HOD?')) {
+                await escalateToHOD(id);
+            }
+        };
+
+        document.getElementById('confirm-approve-btn').onclick = async () => {
+            const s = document.getElementById('mod-start').value, e = document.getElementById('mod-end').value;
+            const newSubId = document.getElementById('mod-substitute').value;
+            
+            const doc = await db.collection('permissions').doc(activeRequest).get();
+            let d = doc.data();
+            let updates = {};
+
+            if(s !== d.startDate || e !== d.endDate) { 
+                updates.startDate = s; updates.endDate = e; updates.isModified = true; 
+            }
+            if(newSubId && newSubId !== d.substituteUID) {
+                const subText = document.getElementById('mod-substitute').options[document.getElementById('mod-substitute').selectedIndex].text;
+                updates.substituteUID = newSubId; updates.substituteName = subText;
+            }
+
+            await escalateToHOD(activeRequest, updates); 
+            closeModal();
+        };
+
+        document.getElementById('confirm-reject-btn').onclick = async () => {
+            const r = document.getElementById('reason-input').value;
+            if(!r) return alert("Reason required");
+            
+            await db.collection('permissions').doc(activeRequest).update({
+                status: 'REJECTED',
+                'approvals.teacher': {
+                    status: 'REJECTED',
+                    uid: auth.currentUser.uid,
+                    name: currentUserProfile.displayName,
+                    timestamp: new Date().toISOString(),
+                    reason: r
+                }
+            });
+            closeModal();
+        };
+
+        document.getElementById('logout-btn').onclick = () => auth.signOut().then(() => location.href = '../../public/login.html');
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Resources | UNI-PASS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+    <script src="../../assets/js/ui.js" defer></script>
+    <script type="module" src="../../assets/js/route-guard.js"></script>
+</head>
+<body class="bg-slate-100 font-sans h-screen flex overflow-hidden">
+
+    <aside class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white z-50 flex flex-col shadow-xl">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-university text-blue-500"></i>
+                <span class="font-bold text-lg tracking-wider">UNI-PASS</span>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="portalA.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition">
+                <i class="fas fa-paper-plane w-4"></i> New Request
+            </a>
+            <a href="portalB.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition">
+                <i class="fas fa-history w-4"></i> Track Status
+            </a>
+            <a href="portalC.html" class="flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg transition">
+                <i class="fas fa-flask w-4"></i> Lab Resources
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-800">
+            <button id="logout-btn" class="w-full py-2 flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition text-sm font-bold">
+                <i class="fas fa-sign-out-alt"></i> Log Out
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full w-full ml-64 overflow-y-auto p-8 bg-slate-100">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6">Available Lab Resources</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl mb-4">
+                    <i class="fas fa-desktop"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-lg">Computer Lab A</h3>
+                <p class="text-slate-500 text-sm mt-1">High-performance workstations for AI/ML.</p>
+                <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">Available</span>
+                    <button class="text-sm font-bold text-blue-600 hover:underline">Book Slot</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl mb-4">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-lg">IoT Workbench</h3>
+                <p class="text-slate-500 text-sm mt-1">Arduino, Raspberry Pi, and sensors.</p>
+                <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <span class="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">Limited</span>
+                    <button class="text-sm font-bold text-blue-600 hover:underline">Book Slot</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl mb-4">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-lg">3D Printing</h3>
+                <p class="text-slate-500 text-sm mt-1">Rapid prototyping facility.</p>
+                <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">Maintenance</span>
+                    <button class="text-sm font-bold text-slate-400 cursor-not-allowed">Unavailable</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth } from '../../assets/js/firebase-init.js';
+        document.getElementById('logout-btn').onclick = () => auth.signOut().then(() => location.href = '../../public/login.html');
+    </script>
+</body>
+</html>
